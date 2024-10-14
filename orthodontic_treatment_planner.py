@@ -1,5 +1,6 @@
 import streamlit as st
-import openai
+import requests
+import json
 from datetime import date
 
 # Set up the Streamlit app
@@ -95,13 +96,26 @@ risks_complications = st.text_area("Potential Risks and Complications (e.g., roo
 st.header('XI. Informed Consent')
 informed_consent = st.text_area("Informed Consent Details (risks, benefits, and patient consent)")
 
+# Function to call OpenAI API
+def generate_treatment_plan(prompt, api_key):
+    url = "https://api.openai.com/v1/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    data = {
+        "model": "text-davinci-003",
+        "prompt": prompt,
+        "max_tokens": 1500
+    }
+    response = requests.post(url, headers=headers, data=json.dumps(data))
+    return response.json()
+
 # Button to Generate Treatment Plan
 if st.button('Generate Comprehensive Treatment Plan'):
     if not api_key:
         st.error('Please enter your OpenAI API Key')
     else:
-        openai.api_key = api_key
-
         # Create the prompt for the OpenAI API
         prompt = f"""
         You are an experienced orthodontist. Based on the following details, generate a comprehensive treatment plan for the patient:
@@ -169,15 +183,11 @@ if st.button('Generate Comprehensive Treatment Plan'):
         """
 
         try:
-            # Use OpenAI API to generate the treatment plan
-            response = openai.Completion.create(
-                engine="text-davinci-003",
-                prompt=prompt,
-                max_tokens=1500
-            )
+            # Call OpenAI API using requests
+            response = generate_treatment_plan(prompt, api_key)
+            treatment_plan = response['choices'][0]['text'].strip()
 
             # Display the treatment plan
-            treatment_plan = response['choices'][0]['text'].strip()
             st.subheader('Generated Treatment Plan')
             st.write(treatment_plan)
 
