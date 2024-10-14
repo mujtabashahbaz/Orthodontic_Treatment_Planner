@@ -4,7 +4,7 @@ import json
 from datetime import date
 
 # Set up the Streamlit app
-st.title('Advanced Orthodontic Treatment Planner')
+st.title('AI-powered Orthodontic Diagnosis and Treatment Planner')
 
 # Ask for OpenAI API key
 api_key = st.text_input('Enter your OpenAI API Key', type='password')
@@ -57,45 +57,6 @@ impacted_teeth = st.text_input("Impacted Teeth (specify if present)")
 root_resorption = st.selectbox("Root Resorption", ['Present', 'Absent'])
 eruption_pattern = st.selectbox("Eruption Pattern", ['Normal', 'Delayed'])
 
-# Section V: Diagnosis
-st.header('V. Diagnosis')
-skeletal_class = st.selectbox("Skeletal Class", ['Class I', 'Class II', 'Class III'])
-dental_class = st.selectbox("Dental Class", ['Class I', 'Class II', 'Class III'])
-overbite_severity = st.selectbox("Overbite Severity", ['Mild', 'Moderate', 'Severe'])
-overjet_status = st.selectbox("Overjet", ['Increased', 'Decreased', 'Normal'])
-other_conditions = st.text_area("Other Conditions (e.g., crossbite, impacted teeth)")
-
-# Section VI: Treatment Objectives
-st.header('VI. Treatment Objectives')
-treatment_objectives = st.text_area("Treatment Objectives (e.g., correct malocclusion, improve aesthetics)")
-
-# Section VII: Treatment Plan
-st.header('VII. Treatment Plan')
-# Appliance Therapy
-appliance_therapy = st.text_area("Appliance Therapy (e.g., braces type, aligners)")
-# Archwire Sequence
-archwire_sequence = st.text_area("Archwire Sequence (e.g., NiTi for alignment)")
-# Adjunctive Therapy
-adjunctive_therapy = st.text_area("Adjunctive Therapy (e.g., elastics, extractions, TADs)")
-
-# Section VIII: Retention Phase
-st.header('VIII. Retention Phase')
-retention_plan = st.text_area("Retention Plan (e.g., removable retainers, fixed retainers)")
-retention_period = st.number_input("Retention Period (months)", min_value=6, max_value=36)
-
-# Section IX: Estimated Treatment Duration
-st.header('IX. Estimated Treatment Duration')
-treatment_duration = st.number_input("Estimated Treatment Duration (months)", min_value=6, max_value=36)
-appointments_frequency = st.selectbox("Appointment Frequency (weeks)", [4, 5, 6, 7, 8])
-
-# Section X: Potential Risks and Complications
-st.header('X. Potential Risks and Complications')
-risks_complications = st.text_area("Potential Risks and Complications (e.g., root resorption, relapse)")
-
-# Informed Consent Section
-st.header('XI. Informed Consent')
-informed_consent = st.text_area("Informed Consent Details (risks, benefits, and patient consent)")
-
 # Function to call OpenAI API
 def generate_treatment_plan(prompt, api_key):
     url = "https://api.openai.com/v1/completions"
@@ -106,19 +67,25 @@ def generate_treatment_plan(prompt, api_key):
     data = {
         "model": "text-davinci-003",
         "prompt": prompt,
-        "max_tokens": 1500
+        "max_tokens": 1500,
+        "temperature": 0.7
     }
     response = requests.post(url, headers=headers, data=json.dumps(data))
-    return response.json()
 
-# Button to Generate Treatment Plan
-if st.button('Generate Comprehensive Treatment Plan'):
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error(f"Error: {response.status_code} - {response.text}")
+        return None
+
+# Button to Generate Diagnosis and Treatment Plan
+if st.button('Generate Diagnosis and Treatment Plan'):
     if not api_key:
         st.error('Please enter your OpenAI API Key')
     else:
         # Create the prompt for the OpenAI API
         prompt = f"""
-        You are an experienced orthodontist. Based on the following details, generate a comprehensive treatment plan for the patient:
+        You are an experienced orthodontist. Based on the following details, generate both a comprehensive diagnosis (Dx) and a treatment plan (Rx) for the patient:
         
         - Patient's Name: {patient_name}
         - Date of Birth: {dob}
@@ -153,44 +120,22 @@ if st.button('Generate Comprehensive Treatment Plan'):
         - Root resorption: {root_resorption}
         - Eruption pattern: {eruption_pattern}
 
-        Diagnosis:
-        Skeletal Class: {skeletal_class}
-        Dental Class: {dental_class}
-        Overbite severity: {overbite_severity}
-        Overjet: {overjet_status}
-        Other conditions: {other_conditions}
-
-        Treatment Objectives:
-        {treatment_objectives}
-
-        Treatment Plan:
-        - Appliance Therapy: {appliance_therapy}
-        - Archwire Sequence: {archwire_sequence}
-        - Adjunctive Therapy: {adjunctive_therapy}
-
-        Retention Phase:
-        Retention plan: {retention_plan}
-        Retention period: {retention_period} months
-
-        Estimated Treatment Duration: {treatment_duration} months
-        Appointments every {appointments_frequency} weeks
-
-        Potential Risks and Complications:
-        {risks_complications}
-
-        Informed Consent:
-        {informed_consent}
+        Based on this data, provide a detailed diagnosis (Dx) of the patient's orthodontic condition, followed by a comprehensive treatment plan (Rx) that includes proposed appliances, sequence of therapy, adjunctive treatments if necessary, and estimated treatment duration.
         """
 
         try:
             # Call OpenAI API using requests
             response = generate_treatment_plan(prompt, api_key)
-            treatment_plan = response['choices'][0]['text'].strip()
+            
+            if response:
+                if 'choices' in response and len(response['choices']) > 0:
+                    treatment_plan = response['choices'][0]['text'].strip()
 
-            # Display the treatment plan
-            st.subheader('Generated Treatment Plan')
-            st.write(treatment_plan)
-
+                    # Display the diagnosis and treatment plan
+                    st.subheader('Generated Diagnosis and Treatment Plan')
+                    st.write(treatment_plan)
+                else:
+                    st.error('Unexpected response structure. Please check the API call or prompt.')
         except Exception as e:
             st.error(f"Error generating treatment plan: {e}")
 
