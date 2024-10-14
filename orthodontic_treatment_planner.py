@@ -57,16 +57,16 @@ impacted_teeth = st.text_input("Impacted Teeth (specify if present)")
 root_resorption = st.selectbox("Root Resorption", ['Present', 'Absent'])
 eruption_pattern = st.selectbox("Eruption Pattern", ['Normal', 'Delayed'])
 
-# Function to call OpenAI API
+# Function to call OpenAI Chat API
 def generate_treatment_plan(prompt, api_key):
-    url = "https://api.openai.com/v1/completions"
+    url = "https://api.openai.com/v1/chat/completions"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
     }
     data = {
-        "model": "text-davinci-003",
-        "prompt": prompt,
+        "model": "gpt-3.5-turbo",
+        "messages": [{"role": "user", "content": prompt}],
         "max_tokens": 1500,
         "temperature": 0.7
     }
@@ -129,7 +129,7 @@ if st.button('Generate Diagnosis and Treatment Plan'):
             
             if response:
                 if 'choices' in response and len(response['choices']) > 0:
-                    treatment_plan = response['choices'][0]['text'].strip()
+                    treatment_plan = response['choices'][0]['message']['content'].strip()
 
                     # Display the diagnosis and treatment plan
                     st.subheader('Generated Diagnosis and Treatment Plan')
@@ -141,4 +141,3 @@ if st.button('Generate Diagnosis and Treatment Plan'):
 
 # Footer
 st.markdown("---")
-st.markdown("Developed using [OpenAI](https://openai.com) and [Streamlit](https://streamlit.io).")
